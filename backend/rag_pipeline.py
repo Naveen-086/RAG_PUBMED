@@ -27,12 +27,15 @@ class RAGPipeline:
             for combo in itertools.combinations(words, r):
                 expansions.append(' '.join(combo))
 
-        # Aggregate semantic results from all expansions
+        # Aggregate semantic results from all expansions, filter by score <= 1.2
+        SEMANTIC_SCORE_THRESHOLD = 1.2
         semantic_results = []
         for q in expansions:
             q_emb = self.embedder.embed([q])
             results = self.store.search(q_emb, topk)
-            semantic_results.extend(results)
+            for r in results:
+                if r["score"] <= SEMANTIC_SCORE_THRESHOLD:
+                    semantic_results.append(r)
 
         # Keyword search: match full query and any individual word (case-insensitive)
         keyword_results = []
@@ -74,4 +77,7 @@ class RAGPipeline:
                 seen.add(key)
             if len(final_results) >= topk:
                 break
+        # Only return results if there is at least one match
+        if not final_results:
+            return []
         return final_results
