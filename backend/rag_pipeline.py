@@ -1,4 +1,6 @@
 import json
+import os
+import pickle
 from backend.vector_store import VectorStore
 from backend.embeddings import TextEmbedder
 
@@ -6,13 +8,19 @@ class RAGPipeline:
     def __init__(self):
         self.embedder = TextEmbedder()
         self.store = VectorStore()
-        # Load all chunks and metadata for keyword search
-        with open("data/raw/pubmed_raw.json", "r", encoding="utf-8") as f:
-            self.articles = json.load(f)
+        # Load chunked metadata for keyword search
+        # Use the same metadata as stored in the FAISS index
+        if os.path.exists(self.store.mapping_path):
+            with open(self.store.mapping_path, "rb") as f:
+                self.chunked_metadata = list(pickle.load(f).values())
+        else:
+            self.chunked_metadata = []
 
     def query(self, text, topk=5):
-        # Dynamic query expansion: generate all combinations of keywords (length >= 2)
         import itertools
+        import os
+        import pickle
+        # Dynamic query expansion: generate all combinations of keywords (length >= 2)
         words = [w for w in text.lower().split() if w.isalnum() or '-' in w]
         expansions = [text]
         for r in range(2, len(words)+1):
@@ -29,34 +37,33 @@ class RAGPipeline:
         # Keyword search: match full query and any individual word (case-insensitive)
         keyword_results = []
         query_lower = text.lower()
-        words = [w for w in text.lower().split() if w.isalnum() or '-' in w]
-        for article in self.articles:
+        for meta in self.chunked_metadata:
             found = False
             # Check full query
             if (
-                query_lower in article.get("title", "").lower()
-                or query_lower in article.get("abstract", "").lower()
-                or query_lower in article.get("chunk", "").lower()
+                query_lower in meta.get("title", "").lower()
+                or query_lower in meta.get("abstract", "").lower()
+                or query_lower in meta.get("chunk", "").lower()
             ):
                 found = True
             # Check individual words
             if not found:
                 for w in words:
                     if (
-                        w in article.get("title", "").lower()
-                        or w in article.get("abstract", "").lower()
-                        or w in article.get("chunk", "").lower()
+                        w in meta.get("title", "").lower()
+                        or w in meta.get("abstract", "").lower()
+                        or w in meta.get("chunk", "").lower()
                     ):
                         found = True
                         break
             if found:
                 keyword_results.append({
-                    "metadata": article,
+                    "metadata": meta,
                     "score": 0.0  # Highest relevance for exact match
                 })
 
-        # Combine results, prioritizing exact matches
-        combined = keyword_results + [r for r in semantic_results if r not in keyword_results]
+        # Combine results, prioritizing semantic matches
+        combined = semantic_results + [r for r in keyword_results if (r["metadata"].get("pmid"), r["metadata"].get("chunk", "")) not in {(s["metadata"].get("pmid"), s["metadata"].get("chunk", "")) for s in semantic_results}]
         # Remove duplicates (by pmid and chunk)
         seen = set()
         final_results = []
