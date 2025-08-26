@@ -25,7 +25,7 @@ if question:
             st.write(f"**Score:** {result['score']:.4f}")
             st.write(f"**Title:** {result['metadata'].get('title', '')}")
             st.write(f"**Abstract:** {result['metadata'].get('abstract', '')}")
-            st.write(f"**Passage:** {result['metadata'].get('url', '')}")
+            st.write(f"**Link:** {result['metadata'].get('url', '')}")
             st.write("---")
     elif results is not None:
         st.warning("No relevant passages found. Please try a different query.")
