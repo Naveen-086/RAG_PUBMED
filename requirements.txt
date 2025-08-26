@@ -1,0 +1,5 @@
+biopython
+transformers
+torch
+faiss-cpu
+streamlit
