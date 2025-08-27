@@ -16,7 +16,7 @@ class RAGPipeline:
         else:
             self.chunked_metadata = []
 
-    def query(self, text, topk=5):
+    def query(self, text, topk=10):
         import itertools
 
         # Dynamic query expansion: generate all combinations of keywords (length >= 2)
@@ -27,7 +27,7 @@ class RAGPipeline:
                 expansions.append(' '.join(combo))
 
         # Aggregate semantic results from all expansions, filter by score <= 1.2
-        SEMANTIC_SCORE_THRESHOLD = 1.2
+        SEMANTIC_SCORE_THRESHOLD = 1.1
         semantic_results = []
         for q in expansions:
             q_emb = self.embedder.embed([q])
@@ -64,7 +64,7 @@ class RAGPipeline:
                 continue
 
         # Combine results, prioritizing semantic matches
-        combined = semantic_results  # keyword results are ignored since 0.0 scores are removed
+        combined = semantic_results + keyword_results # keyword results are ignored since 0.0 scores are removed
 
         # Remove duplicates (by pmid and chunk)
         seen = set()

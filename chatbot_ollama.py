@@ -12,7 +12,7 @@ def get_top_articles_context(question, topk=5):
         articles_text += f"Title: {title}\nAbstract: {abstract}\n\n"
     return articles_text
 
-def chatbot_answer(question, topk=5, model="llama3.2"):
+def chatbot_answer(question, topk=10, model="llama3.2"):
     # Get top articles context
     context = get_top_articles_context(question, topk)
     if not context.strip():
