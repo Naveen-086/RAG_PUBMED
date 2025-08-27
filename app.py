@@ -84,9 +84,19 @@ if question:
                 summary = chatbot_answer(question, topk=5)
 
     # ---------- Results Section ----------
+        # ---------- Results Section ----------
     if results:
         st.markdown("### 📚 Most Relevant Articles")
+
+        seen = set()
+        unique_results = []
         for result in results:
+            pmid = result['metadata'].get('pmid') or result['metadata'].get('url')
+            if pmid not in seen:   # only add unique articles
+                seen.add(pmid)
+                unique_results.append(result)
+
+        for result in unique_results:
             abstract = result['metadata'].get('abstract', '')
             short_abstract = (abstract[:700] + "...") if len(abstract) > 700 else abstract
 
