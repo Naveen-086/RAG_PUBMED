@@ -118,4 +118,7 @@ if question:
 # ---------- Summary Section ----------
 if summary is not None:
     st.markdown("### 🧾 Summary from Top Articles")
-    st.success(summary)
+    # Display all summary lines as plain text, line by line
+    for line in summary.splitlines():
+        if line.strip():
+            st.markdown(line.strip())
