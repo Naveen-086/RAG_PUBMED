@@ -18,8 +18,7 @@ class RAGPipeline:
 
     def query(self, text, topk=5):
         import itertools
-        import os
-        import pickle
+
         # Dynamic query expansion: generate all combinations of keywords (length >= 2)
         words = [w for w in text.lower().split() if w.isalnum() or '-' in w]
         expansions = [text]
@@ -60,13 +59,13 @@ class RAGPipeline:
                         found = True
                         break
             if found:
-                keyword_results.append({
-                    "metadata": meta,
-                    "score": 0.0  # Highest relevance for exact match
-                })
+                # Only add keyword results if they would have a non-zero score
+                # Skip adding zero-score keyword results
+                continue
 
         # Combine results, prioritizing semantic matches
-        combined = semantic_results + [r for r in keyword_results if (r["metadata"].get("pmid"), r["metadata"].get("chunk", "")) not in {(s["metadata"].get("pmid"), s["metadata"].get("chunk", "")) for s in semantic_results}]
+        combined = semantic_results  # keyword results are ignored since 0.0 scores are removed
+
         # Remove duplicates (by pmid and chunk)
         seen = set()
         final_results = []
@@ -77,7 +76,5 @@ class RAGPipeline:
                 seen.add(key)
             if len(final_results) >= topk:
                 break
-        # Only return results if there is at least one match
-        if not final_results:
-            return []
+
         return final_results
